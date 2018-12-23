@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 type csvLine struct {
@@ -23,6 +24,15 @@ func main() {
 		"problems.csv",
 		"a csv file in the format 'question,answer'",
 	)
+
+	var limit int
+	flag.IntVar(
+		&limit,
+		"limit",
+		30,
+		"the time limit for the quiz in seconds",
+	)
+
 	flag.Parse()
 
 	file, err := os.Open(fileName)
@@ -38,23 +48,42 @@ func main() {
 		log.Panic(err)
 	}
 
-	stdinReader := bufio.NewReader(os.Stdin)
-	total := len(records)
-	score := 0
+	score := quiz(bufio.NewReader(os.Stdin), records, limit)
+
+	fmt.Printf("You scored %v out of %v.\n", score, len(records))
+}
+
+func quiz(reader *bufio.Reader, records [][]string, limit int) (correct int) {
+	answers := make(chan string)
+	defer close(answers)
+
+	timeout := time.After(time.Duration(limit) * time.Second)
 	for i, r := range records {
 		fmt.Printf("Problem #%v: %s = ", i+1, r[0])
 
-		line, err := stdinReader.ReadString('\n')
-		if err != nil {
-			log.Panic(err)
-		}
-		line = strings.Replace(line, "\r\n", "", -1)
-		line = strings.Replace(line, "\n", "", -1)
+		go readInput(reader, answers)
 
-		if line == r[1] {
-			score++
+		select {
+		case line := <-answers:
+			if line == r[1] {
+				correct++
+			}
+		case <-timeout:
+			fmt.Println()
+			return
 		}
 	}
 
-	fmt.Printf("You scored %v out of %v.\n", score, total)
+	return
+}
+
+func readInput(r *bufio.Reader, in chan<- string) {
+	line, err := r.ReadString('\n')
+	if err != nil {
+		log.Panic(err)
+	}
+	line = strings.Replace(line, "\r\n", "", -1)
+	line = strings.Replace(line, "\n", "", -1)
+
+	in <- line
 }
