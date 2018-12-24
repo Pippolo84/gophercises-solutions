@@ -42,6 +42,7 @@ func main() {
 
 	csvReader := csv.NewReader(file)
 	csvReader.FieldsPerRecord = 2
+	csvReader.LazyQuotes = true
 
 	records, err := csvReader.ReadAll()
 	if err != nil {
@@ -64,8 +65,8 @@ func quiz(reader *bufio.Reader, records [][]string, limit int) (correct int) {
 		go readInput(reader, answers)
 
 		select {
-		case line := <-answers:
-			if line == r[1] {
+		case answer := <-answers:
+			if cleanString(answer) == cleanString(r[1]) {
 				correct++
 			}
 		case <-timeout:
@@ -78,12 +79,17 @@ func quiz(reader *bufio.Reader, records [][]string, limit int) (correct int) {
 }
 
 func readInput(r *bufio.Reader, in chan<- string) {
-	line, err := r.ReadString('\n')
+	answer, err := r.ReadString('\n')
 	if err != nil {
 		log.Panic(err)
 	}
-	line = strings.Replace(line, "\r\n", "", -1)
-	line = strings.Replace(line, "\n", "", -1)
 
-	in <- line
+	answer = strings.Replace(answer, "\r\n", "", -1)
+	answer = strings.Replace(answer, "\n", "", -1)
+
+	in <- answer
+}
+
+func cleanString(s string) string {
+	return strings.ToLower(strings.TrimSpace(s))
 }
