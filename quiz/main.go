@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -14,6 +15,10 @@ import (
 type csvLine struct {
 	question string
 	answer   string
+}
+
+func init() {
+	rand.Seed(time.Now().UTC().UnixNano())
 }
 
 func main() {
@@ -33,6 +38,14 @@ func main() {
 		"the time limit for the quiz in seconds",
 	)
 
+	var randomize bool
+	flag.BoolVar(
+		&randomize,
+		"randomize",
+		false,
+		"randomize the order of the questions",
+	)
+
 	flag.Parse()
 
 	file, err := os.Open(fileName)
@@ -47,6 +60,10 @@ func main() {
 	records, err := csvReader.ReadAll()
 	if err != nil {
 		log.Panic(err)
+	}
+
+	if randomize {
+		shuffle(records)
 	}
 
 	score := quiz(bufio.NewReader(os.Stdin), records, limit)
@@ -92,4 +109,13 @@ func readInput(r *bufio.Reader, in chan<- string) {
 
 func cleanString(s string) string {
 	return strings.ToLower(strings.TrimSpace(s))
+}
+
+func shuffle(s [][]string) {
+	for n := len(s); n > 0; n-- {
+		randIndex := rand.Intn(n)
+		for i := 0; i < len(s[0]); i++ {
+			s[n-1][i], s[randIndex][i] = s[randIndex][i], s[n-1][i]
+		}
+	}
 }
