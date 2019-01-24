@@ -7,6 +7,9 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
+
+	"github.com/mediocregopher/radix.v2/redis"
 )
 
 func main() {
@@ -25,11 +28,12 @@ func main() {
 
 	mux := defaultMux()
 
-	// Build the defaultHandler using the mux as the fallback
-	pathsToUrls := map[string]string{
-		"/urlshort-godoc": "https://godoc.org/github.com/gophercises/urlshort",
-		"/yaml-godoc":     "https://godoc.org/gopkg.in/yaml.v2",
+	pathsToUrls, err := getLocationsMap()
+	if err != nil {
+		panic(err)
 	}
+
+	// Build the defaultHandler using the mux as the fallback
 	defaultHandler := urlshort.MapHandler(pathsToUrls, mux)
 
 	// Build the YAMLHandler using the defaultHandler as the fallback
@@ -49,5 +53,35 @@ func defaultMux() *http.ServeMux {
 }
 
 func hello(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello, world!")
+	fmt.Fprintf(w, "No mapping defined for this handler :(")
+}
+
+func getLocationsMap() (map[string]string, error) {
+	client, err := redis.Dial("tcp", "localhost:6379")
+	if err != nil {
+		return nil, err
+	}
+	defer client.Close()
+
+	resp := client.Cmd("LLEN", "urlshort")
+	if resp.Err != nil {
+		return nil, resp.Err
+	}
+
+	l, err := resp.Int()
+	if err != nil {
+		return nil, err
+	}
+
+	resp = client.Cmd("LRANGE", "urlshort", "0", strconv.Itoa(l))
+	if resp.Err != nil {
+		return nil, resp.Err
+	}
+
+	pathsToUrls, err := resp.Map()
+	if err != nil {
+		return nil, err
+	}
+
+	return pathsToUrls, nil
 }
