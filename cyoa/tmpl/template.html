@@ -1,0 +1,36 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title> Choose Your Own Adventure </title>
+  <meta name="description" content="Gophercises Choose Your Own Adventure">
+  <meta name="author" content="Fabio Falzoi">
+
+  <link rel="stylesheet" type="text/css" href="static/css/styles.css">
+
+</head>
+
+<body>
+  <section class="page">
+    <h1> {{.Title}} </h1>
+
+    {{range .Story}}
+      <p>{{.}}</p>
+    {{end}}
+
+    {{if .HasOption}}
+      <ul>
+        {{range .Options}}
+          <li>
+            <a href="{{.Arc}}">{{.Text}}</a>
+          </li>
+        {{end}}
+      </ul>
+    {{else}}
+      <center><h3>The End</h3></center>
+    {{end}}
+  </section>
+</body>
+</html>
