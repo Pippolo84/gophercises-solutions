@@ -9,6 +9,7 @@ import (
 	"os"
 )
 
+// AppStatus stores the global application status
 type AppStatus struct {
 	Arcs map[string]Arc
 	Tmpl *template.Template
@@ -16,6 +17,7 @@ type AppStatus struct {
 
 var appStatus AppStatus
 
+// Arc stores info about a story arc
 type Arc struct {
 	Title     string   `json:"title"`
 	Story     []string `json:"story"`
@@ -23,11 +25,13 @@ type Arc struct {
 	HasOption bool
 }
 
+// Option contains info to jump from one arc to another
 type Option struct {
 	Text string `json:"text"`
 	Arc  string `json:"arc"`
 }
 
+// AppHandler will handle all the incoming requests
 type AppHandler func(http.ResponseWriter, *http.Request)
 
 func (fn AppHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
