@@ -2,10 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 )
 
@@ -31,27 +31,6 @@ type Option struct {
 	Arc  string `json:"arc"`
 }
 
-// AppHandler will handle all the incoming requests
-type AppHandler func(http.ResponseWriter, *http.Request)
-
-func (fn AppHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var arc Arc
-
-	if r.URL.Path == "/" {
-		arc = appStatus.Arcs["intro"]
-	} else {
-		var ok bool
-		arc, ok = appStatus.Arcs[r.URL.Path[1:]]
-		if !ok {
-			http.Error(w, "404 not found", http.StatusNotFound)
-			return
-		}
-	}
-
-	arc.HasOption = len(arc.Options) > 0
-	appStatus.Tmpl.Execute(w, arc)
-}
-
 func main() {
 	jsonFile, err := os.Open("gopher.json")
 	if err != nil {
@@ -62,20 +41,46 @@ func main() {
 
 	byteValue, _ := ioutil.ReadAll(jsonFile)
 
-	err = json.Unmarshal(byteValue, &appStatus.Arcs)
+	arcs := make(map[string]Arc)
+	err = json.Unmarshal(byteValue, &arcs)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	appStatus.Tmpl = template.Must(template.ParseFiles("tmpl/template.html"))
+	key := "intro"
+	for {
+		arc, ok := arcs[key]
+		if !ok {
+			log.Fatalf("unknown key %s", key)
+		}
 
-	var appHandler AppHandler
+		fmt.Printf("\n%s\n\n", arc.Title)
 
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	http.Handle("/", appHandler)
+		for _, paragraph := range arc.Story {
+			fmt.Println(paragraph)
+		}
 
-	err = http.ListenAndServe(":8080", nil)
-	if err != nil {
-		log.Fatal(err)
+		if len(arc.Options) == 0 {
+			fmt.Printf("\nThe End\n")
+			break
+		}
+
+		for {
+			fmt.Println()
+
+			for idx, option := range arc.Options {
+				fmt.Printf("%d) %s\n", idx+1, option.Text)
+			}
+			fmt.Printf("\nYour choice: ")
+
+			var choice int
+			_, err := fmt.Scanf("%d", &choice)
+			if err == nil && choice > 0 && choice <= len(arc.Options) {
+				key = arcs[key].Options[choice-1].Arc
+				break
+			}
+
+			fmt.Printf("\ninvalid choice, please try again\n")
+		}
 	}
 }
