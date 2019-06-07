@@ -48,7 +48,7 @@ func (href href) Value() interface{} {
 
 func hrefVisitor(node graph.Producer) ([]graph.Producer, error) {
 	var next []graph.Producer
-	url := node.Value()
+	url := node.Value().(string)
 
 	resp, err := http.Get(url)
 	if err != nil {
