@@ -9,8 +9,7 @@ import (
 
 // Crawl return all links in the webpage specified by domain
 // Only the link pointing to the same domain will be returned
-
-// FIXME: describe maxDepth
+// No more than maxDepth steps will be taken when fetching links
 func Crawl(domain string, maxDepth uint) ([]string, error) {
 	startHref := href{
 		domain: domain,
