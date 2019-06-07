@@ -2,20 +2,22 @@ package crawler
 
 import (
 	"gophercises/link/linkextract"
-	"gophercises/sitemap/bfs"
+	"gophercises/sitemap/graph"
 	"net/http"
 	"strings"
 )
 
 // Crawl return all links in the webpage specified by domain
 // Only the link pointing to the same domain will be returned
-func Crawl(domain string) ([]string, error) {
+
+// FIXME: describe maxDepth
+func Crawl(domain string, maxDepth uint) ([]string, error) {
 	startHref := href{
 		domain: domain,
 		path:   "/",
 	}
 
-	generators, err := bfs.Bfs(startHref, bfs.VisitorFunc(hrefVisitor))
+	generators, err := graph.Bfs(startHref, graph.VisitorFunc(hrefVisitor), maxDepth)
 	if err != nil {
 		return nil, err
 	}
@@ -45,8 +47,8 @@ func (href href) Value() interface{} {
 	return href.ID()
 }
 
-func hrefVisitor(node bfs.Producer) ([]bfs.Producer, error) {
-	var next []bfs.Producer
+func hrefVisitor(node graph.Producer) ([]graph.Producer, error) {
+	var next []graph.Producer
 	url := node.ID()
 
 	resp, err := http.Get(url)

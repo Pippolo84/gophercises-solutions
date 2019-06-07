@@ -1,4 +1,4 @@
-package bfs
+package graph
 
 // Producer is the interface implemented by the nodes of the graph.
 //
@@ -26,19 +26,25 @@ func (f VisitorFunc) Visit(node Producer) ([]Producer, error) {
 }
 
 // Bfs implements the Breadth First Search algorithm
-func Bfs(node Producer, visitor Visitor) ([]Producer, error) {
+// It visits p and all the nodes reachable from p,
+// using v to get the list of neighbors at each step.
+// No more than maxDepth steps are done.
+func Bfs(p Producer, v Visitor, maxDepth uint) ([]Producer, error) {
 	visited := make(map[string]bool)
 	var result []Producer
 
-	for queue := []Producer{node}; len(queue) > 0; {
-		next := queue[0]
-		queue = queue[1:]
+	curQueue := []Producer{p}
+	nextQueue := []Producer{}
+	var curDepth uint
+	for len(curQueue) > 0 && curDepth < maxDepth {
+		next := curQueue[0]
+		curQueue = curQueue[1:]
 
 		if _, found := visited[next.ID()]; found {
 			continue
 		}
 
-		neighbors, err := visitor.Visit(next)
+		neighbors, err := v.Visit(next)
 		if err != nil {
 			return nil, err
 		}
@@ -46,7 +52,12 @@ func Bfs(node Producer, visitor Visitor) ([]Producer, error) {
 
 		result = append(result, next)
 
-		queue = append(queue, neighbors...)
+		nextQueue = append(nextQueue, neighbors...)
+
+		if len(curQueue) == 0 {
+			curQueue, nextQueue = nextQueue, curQueue
+			curDepth++
+		}
 	}
 
 	return result, nil
