@@ -37,9 +37,9 @@ type href struct {
 func (href href) ID() string {
 	if strings.HasPrefix(href.path, "/") {
 		return href.domain + href.path
-	} else {
-		return href.domain + "/" + href.path
 	}
+
+	return href.domain + "/" + href.path
 }
 
 func (href href) Value() interface{} {
